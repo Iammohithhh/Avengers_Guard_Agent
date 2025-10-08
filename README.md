@@ -19,10 +19,10 @@ Voice Activation • Face Recognition • Dynamic Dialogue • Escalating Threat
 
 An AI-powered room security system inspired by Marvel's JARVIS that:
 
-1. ** Activates by voice**: Say "Jarvis, guard my room" or "Avengers assemble"
-2. ** Recognizes faces**: Welcomes trusted users, detects intruders
-3. ** Engages with personality**: 4 distinct AI agents (JARVIS → Captain America → Hulk → Thor)
-4. ** Escalates threats**: Polite inquiry → Firm warning → Stern threat → Loud alarm
+1. Activates by voice**: Say "Jarvis, guard my room" or "Avengers assemble"
+2. Recognizes faces**: Welcomes trusted users, detects intruders
+3. Engages with personality**: 4 distinct AI agents (JARVIS → Captain America → Hulk → Thor)
+4. Escalates threats**: Polite inquiry → Firm warning → Stern threat → Loud alarm
 
 ## 🚀 Quick Start (5 Minutes)
 
@@ -242,7 +242,7 @@ Questions? Open an issue or reach out:
 
 <div align="center">
 
-**Built with ❤️ for AI Multi-Modal Systems Course**
+**Built with ❤️ as part of EE 782 - Advanced Machine Learning Course**
 
 *"I am Iron Man... but you can call me JARVIS."*
 
