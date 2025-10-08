@@ -50,8 +50,9 @@ class LLMManager:
             return os.getenv("OPENAI_API_KEY")
         return None
     
+
     def _init_gemini(self):
-        """Initialize Google Gemini"""
+        """Initialize Google Gemini - FIXED"""
         try:
             import google.generativeai as genai
             
@@ -62,16 +63,55 @@ class LLMManager:
                 return
             
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-pro')
-            self.chat = None  # Will initialize per conversation
-            print("✅ Google Gemini initialized")
             
-        except ImportError:
-            print("❌ google-generativeai not installed. Run: pip install google-generativeai")
-            self.model = None
+            # FIX: Use correct model name
+            # Available models: gemini-1.5-flash, gemini-1.5-pro-latest, gemini-pro
+            model_options = [
+                'gemini-1.5-pro', 
+                'gemini-pro',
+                'gemini-1.0-pro',
+                'gemini-2.0-flash-lite'
+            ]
+            
+            for model_name in model_options:
+                try:
+                    self.model = genai.GenerativeModel(model_name)
+                    # Test it works
+                    test = self.model.generate_content("test")
+                    if test:
+                        print(f"✅ Gemini initialized: {model_name}")
+                        break
+                except:
+                    continue
+            
+            if not self.model:
+                print("⚠️  No working Gemini model found")
+            
+            self.chat = None
+            
         except Exception as e:
-            print(f"❌ Gemini initialization failed: {e}")
+            print(f"❌ Gemini error: {e}")
             self.model = None
+
+
+    # ALTERNATIVE: If you want to check available models first:
+    def check_available_gemini_models(api_key):
+        """Check which Gemini models are available"""
+        import google.generativeai as genai
+        
+        genai.configure(api_key=api_key)
+        
+        print("\n📋 Available Gemini Models:")
+        print("="*60)
+        
+        for model in genai.list_models():
+            if 'generateContent' in model.supported_generation_methods:
+                print(f"✅ {model.name}")
+        
+        print("="*60 + "\n")
+
+    # Usage:
+    # check_available_gemini_models(os.getenv("GEMINI_API_KEY"))
     
     def _init_openai(self):
         """Initialize OpenAI GPT"""
@@ -95,56 +135,78 @@ class LLMManager:
             self.client = None
     
     def set_system_prompt(self, agent_personality: str, context: str = ""):
-        """
-        Set system prompt with agent personality
+        """Set system prompt with agent personality"""
+        system_prompt = f"""{agent_personality}
+
+Current Context: {context}
+
+REMEMBER: 
+- Respond with ONE sentence only (max 20 words)
+- Speak DIRECTLY to the intruder as your character
+- NO explanations, options, or reasoning
+- Just the in-character dialogue response"""
         
-        Args:
-            agent_personality: Agent's personality description
-            context: Additional context (threat level, previous interactions)
-        """
-        system_prompt = f"""You are an AI security guard with the following personality:
-{agent_personality}
-
-Context: {context}
-
-Your role is to:
-1. Detect and respond to intruders with escalating firmness
-2. Maintain your character personality consistently
-3. Be brief (1-2 sentences per response)
-4. Escalate from polite to stern based on threat level
-
-Keep responses natural and in-character. Never break character."""
-        
-        # Reset conversation with new system prompt
         self.conversation_history = [
             ConversationMessage(role="system", content=system_prompt)
         ]
         
-        # For Gemini, reinitialize chat
         if self.provider == "gemini" and self.model:
             self.chat = self.model.start_chat(history=[])
     
+    def _clean_llm_response(self, response: str) -> str:
+        """Clean LLM response to extract just the dialogue"""
+        response = response.strip()
+        
+        # Remove paragraphs
+        if '\n\n' in response:
+            response = response.split('\n\n')[0]
+        
+        # Remove markdown
+        response = response.replace('**', '').replace('*', '').replace('>', '')
+        
+        # Extract from "Option X:"
+        if 'Option' in response and ':' in response:
+            parts = response.split(':', 1)
+            if len(parts) > 1:
+                response = parts[1].strip()
+        
+        # Remove quotes
+        response = response.strip('"').strip("'")
+        
+        # First sentence only
+        sentences = response.split('. ')
+        if len(sentences) > 2:
+            response = sentences[0] + '.'
+        
+        # Max 30 words
+        words = response.split()
+        if len(words) > 30:
+            response = ' '.join(words[:30]) + '...'
+        
+        return response.strip()
+    
     def generate_response(self, user_input: str, threat_level: int = 1,
                          fallback_responses: List[str] = None) -> str:
-        """
-        Generate response using LLM
+        """Generate response using LLM"""
+        urgency_map = {
+            1: "Be polite and inquiring.",
+            2: "Be firm and warning them.",
+            3: "Be stern and threatening. Mention police.",
+            4: "Be VERY LOUD and aggressive. Emergency!"
+        }
         
-        Args:
-            user_input: What the intruder said/did
-            threat_level: 1-4, affects response tone
-            fallback_responses: Pre-scripted responses if LLM fails
-        
-        Returns:
-            Generated response string
-        """
-        # Add context about threat level
-        context_input = f"[Threat Level {threat_level}/4] {user_input}"
+        context_input = f"{urgency_map.get(threat_level, '')} {user_input}"
         
         try:
             if self.provider == "gemini":
-                return self._generate_gemini(context_input, fallback_responses)
+                response = self._generate_gemini(context_input, fallback_responses)
             elif self.provider == "openai":
-                return self._generate_openai(context_input, fallback_responses)
+                response = self._generate_openai(context_input, fallback_responses)
+            
+            # Clean the response
+            response = self._clean_llm_response(response)
+            return response
+            
         except Exception as e:
             print(f"❌ LLM generation failed: {e}")
             return self._get_fallback(fallback_responses, threat_level)
@@ -300,13 +362,6 @@ Tone: Respectful but authoritative
 Response style: Clear, straightforward, no-nonsense soldier
 Example: "Hold on there. I haven't seen you before. Mind introducing yourself?"
 Keep responses brief (1-2 sentences). Stay true to your values.""",
-            
-            "black_widow": """You are Black Widow, Natasha Romanoff.
-Personality: Strategic, observant, calm, psychologically intimidating
-Tone: Cool, calculating, subtly threatening
-Response style: Reads people, strategic statements, controlled
-Example: "I don't know you. And I remember faces. Want to tell me why you're here?"
-Keep responses brief (1-2 sentences). Use psychological tactics.""",
             
             "hulk": """You are Hulk.
 Personality: Simple, direct, protective, quick to anger

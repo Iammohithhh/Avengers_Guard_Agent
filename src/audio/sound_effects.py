@@ -126,7 +126,6 @@ class SoundEffectsManager:
         sound_map = {
             "jarvis": "jarvis_activate",
             "captain_america": "cap_activate",
-            "black_widow": "widow_activate",
             "hulk": "hulk_activate",
             "thor": "thor_activate"
         }
@@ -147,7 +146,6 @@ class SoundEffectsManager:
         sound_map = {
             "jarvis": "jarvis_alert",
             "captain_america": "cap_alert",
-            "black_widow": "widow_alert",
             "hulk": "hulk_alert",
             "thor": "thor_alert"
         }

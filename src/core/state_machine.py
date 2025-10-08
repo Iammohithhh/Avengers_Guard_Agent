@@ -1,6 +1,6 @@
 """
-State Machine for Escalation Logic
-Manages threat levels and auto-escalation based on intruder behavior
+State Machine for Escalation Logic - FIXED VERSION
+Replace your existing state_machine.py with this
 """
 
 import time
@@ -52,6 +52,7 @@ class EscalationStateMachine:
     """
     Manages system state and threat escalation logic
     Auto-escalates based on time and intruder persistence
+    FIXED: Faster escalation and longer tracking
     """
     
     def __init__(self):
@@ -61,18 +62,18 @@ class EscalationStateMachine:
         self.activation_time: Optional[float] = None
         self.event_log: List[dict] = []
         
-        # Escalation timing (seconds)
+        # FIX: Faster escalation timing (seconds)
         self.escalation_thresholds = {
             ThreatLevel.LEVEL_1_INQUIRY: 0,      # Immediate
-            ThreatLevel.LEVEL_2_WARNING: 10,     # After 10 seconds
-            ThreatLevel.LEVEL_3_ALERT: 25,       # After 25 seconds total
-            ThreatLevel.LEVEL_4_ALARM: 45        # After 45 seconds total
+            ThreatLevel.LEVEL_2_WARNING: 5,      # ✅ After 5 seconds (was 10)
+            ThreatLevel.LEVEL_3_ALERT: 12,       # ✅ After 12 seconds (was 25)
+            ThreatLevel.LEVEL_4_ALARM: 20        # ✅ After 20 seconds (was 45)
         }
         
         # Configuration
         self.auto_escalate = True
         self.max_intruders_before_alarm = 2
-        self.intruder_timeout = 5.0  # Remove intruder if not seen for 5 sec
+        self.intruder_timeout = 15.0  # ✅ 15 sec (was 5) - longer tracking
     
     def activate(self):
         """Activate the guard system"""
@@ -280,14 +281,20 @@ class EscalationStateMachine:
 
 # Test the state machine
 if __name__ == "__main__":
-    print("🎮 STATE MACHINE TEST\n")
+    print("🎮 STATE MACHINE TEST - FIXED VERSION\n")
     print("="*60)
     
     # Create state machine
     sm = EscalationStateMachine()
     
+    print("✅ FIXED TIMING:")
+    print(f"   Level 1 → 2: {sm.escalation_thresholds[ThreatLevel.LEVEL_2_WARNING]}s")
+    print(f"   Level 2 → 3: {sm.escalation_thresholds[ThreatLevel.LEVEL_3_ALERT]}s")
+    print(f"   Level 3 → 4: {sm.escalation_thresholds[ThreatLevel.LEVEL_4_ALARM]}s")
+    print(f"   Intruder timeout: {sm.intruder_timeout}s\n")
+    
     # Activate
-    print("\n1️⃣ ACTIVATING SYSTEM")
+    print("1️⃣ ACTIVATING SYSTEM")
     sm.activate()
     time.sleep(1)
     
@@ -298,40 +305,37 @@ if __name__ == "__main__":
     print(f"   Action: {info['action']}")
     
     # Simulate time passing and re-detection
-    print("\n3️⃣ INTRUDER STILL PRESENT (5 seconds later)")
-    time.sleep(5)
-    for i in range(3):
+    print("\n3️⃣ INTRUDER STILL PRESENT (testing escalation)")
+    for i in range(25):
         info = sm.process_detection("intruder_1")
-        time.sleep(2)
-    
-    print(f"   Threat Level: {info['threat_level']}")
-    print(f"   Time Present: {info['time_present']:.1f}s")
-    print(f"   Action: {info['action']}")
-    
-    # More time passes
-    print("\n4️⃣ CONTINUING ESCALATION (10 more seconds)")
-    for i in range(5):
-        info = sm.process_detection("intruder_1")
-        time.sleep(2)
-    
-    print(f"   Threat Level: {info['threat_level']}")
-    print(f"   Time Present: {info['time_present']:.1f}s")
-    print(f"   Action: {info['action']}")
+        time.sleep(1)
+        
+        # Print status every 5 seconds
+        if i % 5 == 4:
+            print(f"   T+{i+1}s: Level {info['threat_level']} - {info['time_present']:.1f}s present")
     
     # Show statistics
-    print("\n5️⃣ STATISTICS")
+    print("\n4️⃣ STATISTICS")
     stats = sm.get_statistics()
     for key, value in stats.items():
         print(f"   {key}: {value}")
     
     # Intruder leaves
-    print("\n6️⃣ INTRUDER LEAVES (waiting...)")
-    time.sleep(6)
+    print("\n5️⃣ INTRUDER LEAVES (waiting 16s...)")
+    time.sleep(16)
     sm.cleanup_old_intruders()
     
     # Deactivate
-    print("\n7️⃣ DEACTIVATING SYSTEM")
+    print("\n6️⃣ DEACTIVATING SYSTEM")
     duration = sm.deactivate()
+    
+    print("\n" + "="*60)
+    print("✅ State machine test complete!")
+    print("\nYou should have seen:")
+    print("   Level 1 at T+0s")
+    print("   Level 2 at T+5s") 
+    print("   Level 3 at T+12s")
+    print("   Level 4 at T+20s")
     
     print("\n" + "="*60)
     print("✅ State machine test complete!")
