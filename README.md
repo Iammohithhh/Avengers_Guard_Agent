@@ -27,9 +27,8 @@ An AI-powered room security system inspired by Marvel's JARVIS that:
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/yourusername/avengers-guard
-cd avengers-guard
-pip install -r requirements.txt
+git clone https://github.com/Iammohithhh/Avengers_Guard_Agent
+pip install -r req.txt
 
 # 2. Enroll your face
 python scripts/enroll_face.py --name "YourName" --role owner
